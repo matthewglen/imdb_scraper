@@ -10,6 +10,7 @@ library(stringr)
 # Breaking Bad tt0903747
 
 search_term <- readline(prompt="Enter show: ")
+search_term <- "Breaking Bad"
 # Add +
 search_term <- gsub(" ", "+", search_term)
 # Search URL: https://www.imdb.com/find?q=...+...
@@ -52,7 +53,7 @@ df <- data.frame(
   season = character(),
   episode = character(),
   rating = character(),
-  rater = character(),
+  raters = character(),
   aired_date = character(),
   synopsis = character()
 )
@@ -87,7 +88,7 @@ for (i in 1:num_data) {
   # Scrape
   raters_data_html <- html_nodes(webpage,'div.ipl-rating-star.small span.ipl-rating-star__total-votes')
   # Convert to text. Brackets remain, will leave them for now, but might come back
-  raters_data <- html_text(raters_data_html)
+  raters_data <- gsub('^.|.$', '', html_text(raters_data_html))
   raters_data
   
   # Release date
@@ -144,18 +145,44 @@ df$episode <- factor(df$episode, levels=unique(df$episode))
 # Keep ratings in the right order (convert to numeric)
 df$rating <- as.numeric(df$rating)
 
-ggplot(data = df,
-       aes(x = episode, y = rating, group = season, colour = season)) +
+plot <- ggplot(data = df,
+       aes(x = episode, y = rating, group = season, colour = season,
+           text = paste(
+             paste("Episode:", episode, sep = " "),
+             paste("Rating:", rating, sep = " "),
+             paste("Rated by: ", rater, sep = " "),
+             sep = "\n"
+           ))) +
   geom_point() +
   geom_line() +
   labs(
-    title = paste(title_data)
+    title = paste(title_data),
+    caption = "Source: IMDB. Ratings and episode names are as shown on IMDB."
   ) +
-  # scale_y_continuous(limits = c(0,10)) +
+  scale_y_continuous(limits = c(0,10)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  bbc_style()
+  bbc_style() +
+  theme(
+    plot.caption = element_text()
+  )
 
 # geom_text(data = rbind(df[which.min(df$rating), ], df[which.max(df$rating),]), 
 #           aes(episode,round(rating), label=rating))
+
+ggplotly(plot, tooltip = "text") 
+
+# %>% layout(
+#     annotations = list(x = 1.12, y = -0.22,
+#                        text = "Source: IMDB. Ratings and episode names are as shown on IMDB.", 
+#                        showarrow = F, xref='paper', yref='paper',
+#                        xanchor='right', yanchor='auto', xshift=0, yshift=0,
+#                        font=list(size=15, color="grey")))
+
+
+
+
+
+
+
 
 
